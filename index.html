@@ -1,0 +1,391 @@
+<!DOCTYPE html>
+<html lang="uz">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>UzbGPT</title>
+<style>
+:root{--bg:#141310;--panel:#1f1d19;--text:#f2ece0;--muted:#9b9383;--accent:#d4a955;--user:#2e2b25;--border:#363229}
+body.light{--bg:#f6f1e6;--panel:#fffdf7;--text:#2a261e;--muted:#7a7262;--accent:#8a6a2a;--user:#ece4d0;--border:#dcd2bc}
+*{box-sizing:border-box}
+body{margin:0;background:linear-gradient(-45deg,#141310,#2a2418,#101418,#1f1a12);background-size:400% 400%;animation:bg 16s ease infinite;color:var(--text);font-family:system-ui,-apple-system,'Segoe UI',sans-serif;height:100vh;overflow:hidden}
+body.light{background:linear-gradient(-45deg,#fffaf0,#efe6d2,#f7f2ea,#e9dfc8);background-size:400% 400%}
+@keyframes bg{0%{background-position:0% 50%}50%{background-position:100% 50%}100%{background-position:0% 50%}}
+@keyframes up{from{opacity:0;transform:translateY(22px)}to{opacity:1;transform:none}}
+@keyframes fade{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+@keyframes shake{0%,100%{transform:translateX(0)}20%{transform:translateX(-10px)}40%{transform:translateX(10px)}60%{transform:translateX(-7px)}80%{transform:translateX(5px)}}
+@keyframes pop{0%{transform:scale(.85);opacity:0}60%{transform:scale(1.04)}100%{transform:scale(1);opacity:1}}
+@keyframes glow{0%{box-shadow:0 0 0 0 rgba(120,220,140,.7)}100%{box-shadow:0 0 0 30px rgba(120,220,140,0)}}
+@keyframes blink{0%,80%,100%{opacity:.2}40%{opacity:1}}
+@keyframes logoIn{from{letter-spacing:12px;opacity:0}to{letter-spacing:-.5px;opacity:1}}
+.screen{position:fixed;inset:0;display:none;align-items:center;justify-content:center;padding:20px;z-index:20;overflow-y:auto}
+.screen.show{display:flex}
+.card{background:var(--panel);border:1px solid var(--border);border-radius:22px;padding:26px;width:100%;max-width:440px;animation:up .6s cubic-bezier(.2,.8,.2,1) both;box-shadow:0 24px 70px rgba(0,0,0,.45)}
+.card.shake{animation:shake .5s}
+.card.ok{animation:pop .5s ease,glow 1s .1s ease}
+.logo{font-size:34px;font-weight:700;text-align:center;animation:logoIn 1s ease both;margin-bottom:6px}
+.logo span{color:var(--accent)}
+h3{margin:4px 0 14px;font-weight:600;font-size:20px;color:var(--accent);animation:fade .5s .1s both}
+label{display:block;font-size:13px;color:var(--muted);margin:12px 0 4px}
+input,select{width:100%;background:var(--bg);color:var(--text);border:1px solid var(--border);border-radius:10px;padding:10px;font:inherit;transition:border-color .25s,box-shadow .25s}
+input:focus,select:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 3px rgba(212,169,85,.2)}
+.grid3{display:grid;grid-template-columns:1fr 1.3fr 1fr;gap:8px}
+.row{display:flex;gap:8px;justify-content:flex-end;margin-top:18px;flex-wrap:wrap}
+.btn{background:var(--accent);color:#fff;border:0;border-radius:20px;padding:10px 20px;cursor:pointer;font:inherit;transition:transform .2s,filter .2s}
+.btn:hover{transform:scale(1.04);filter:brightness(1.08)}
+.btn:active{transform:scale(.97)}
+.btn.ghost{background:none;color:var(--text);border:1px solid var(--border)}
+.typeBtn{display:block;width:100%;text-align:left;padding:14px 16px;margin:10px 0;border:1px solid var(--border);border-radius:14px;background:none;color:var(--text);cursor:pointer;font:inherit;transition:transform .25s,border-color .25s,background .25s;animation:fade .5s both}
+.typeBtn:nth-child(2){animation-delay:.1s}.typeBtn:nth-child(3){animation-delay:.2s}
+.typeBtn:hover{transform:translateX(8px);border-color:var(--accent)}
+.typeBtn.sel{border-color:var(--accent);background:var(--user)}
+.typeBtn b{display:block;font-size:17px;margin-bottom:3px}
+.typeBtn small{color:var(--muted)}
+.msgline{min-height:22px;font-size:14px;margin-top:12px;transition:color .3s}
+.good{color:#7fd69a}.bad{color:#e57a6a}
+.note{font-size:13px;color:var(--muted);margin:6px 0 0}
+.step{animation:fade .45s both}
+#app{display:none;flex-direction:column;height:100vh}
+header{display:flex;align-items:center;justify-content:space-between;padding:14px 20px}
+.logoSm{font-size:22px;font-weight:700}.logoSm span{color:var(--accent)}
+.iconbtn{background:none;border:1px solid var(--border);color:var(--text);border-radius:50%;width:40px;height:40px;cursor:pointer;font-size:16px;margin-left:6px;transition:transform .2s,background .2s}
+.iconbtn:hover{transform:rotate(15deg) scale(1.08)}
+.iconbtn.on{background:var(--accent);color:#fff;border-color:var(--accent)}
+#chat{flex:1;overflow-y:auto;padding:20px;max-width:800px;width:100%;margin:0 auto}
+.msg{margin:12px 0;padding:12px 16px;border-radius:20px;max-width:85%;white-space:pre-wrap;line-height:1.65;word-wrap:break-word;animation:fade .4s ease both}
+.user{margin-left:auto;background:var(--user)}
+.bot{background:transparent;padding-left:4px}
+.bot img{max-width:100%;border-radius:14px;display:block;margin-top:8px;animation:pop .6s ease}
+.empty{text-align:center;color:var(--muted);margin-top:14vh;animation:fade .8s both}
+.empty h2{font-size:32px;font-weight:600;color:var(--text);margin:0 0 8px}
+.dots span{display:inline-block;animation:blink 1.2s infinite;font-size:20px}
+.dots span:nth-child(2){animation-delay:.2s}.dots span:nth-child(3){animation-delay:.4s}
+footer{padding:0 16px 24px}
+.bar{display:flex;gap:8px;max-width:800px;margin:0 auto;align-items:center;background:var(--panel);border:1px solid var(--border);border-radius:28px;padding:8px;box-shadow:0 10px 40px rgba(0,0,0,.35);transition:box-shadow .3s}
+.bar:focus-within{box-shadow:0 10px 40px rgba(212,169,85,.25)}
+textarea{flex:1;resize:none;background:transparent;color:var(--text);border:none;padding:10px 12px;font:inherit;max-height:160px;outline:none}
+.send{background:var(--text);color:var(--bg);border:0;border-radius:50%;width:42px;height:42px;cursor:pointer;font-size:16px;transition:transform .2s}
+.send:hover{transform:scale(1.1)}
+.modal{position:fixed;inset:0;background:rgba(0,0,0,.55);display:none;align-items:center;justify-content:center;padding:16px;z-index:30;animation:fade .3s both}
+.modal.show{display:flex}
+.orb{position:fixed;border-radius:50%;filter:blur(90px);opacity:.42;z-index:0;pointer-events:none;animation:float 16s ease-in-out infinite}
+.orb.a{width:460px;height:460px;background:#d4a955;top:-140px;left:-120px}
+.orb.b{width:420px;height:420px;background:#3f7bd6;bottom:-140px;right:-100px;animation-delay:-6s}
+.orb.c{width:320px;height:320px;background:#c0557a;top:38%;left:44%;animation-delay:-11s;opacity:.25}
+@keyframes float{0%,100%{transform:translate(0,0) scale(1)}33%{transform:translate(70px,-50px) scale(1.12)}66%{transform:translate(-50px,60px) scale(.9)}}
+#app{position:relative;z-index:1}
+.msg.user{animation:slideR .7s cubic-bezier(.2,1.4,.4,1) both}
+.msg.bot{animation:slideL .7s cubic-bezier(.2,.8,.2,1) both}
+@keyframes slideR{from{opacity:0;transform:translateX(70px) scale(.85)}to{opacity:1;transform:none}}
+@keyframes slideL{from{opacity:0;transform:translateX(-36px);filter:blur(8px)}to{opacity:1;transform:none;filter:blur(0)}}
+.caret{display:inline-block;width:2px;height:1.05em;background:var(--accent);margin-left:3px;vertical-align:-3px;box-shadow:0 0 8px var(--accent);animation:blink 0.9s steps(1) infinite}
+.bar:focus-within{animation:pulse 2.2s ease-in-out infinite}
+@keyframes pulse{0%,100%{box-shadow:0 0 0 0 rgba(212,169,85,.4)}50%{box-shadow:0 0 0 9px rgba(212,169,85,0)}}
+.send.fire{animation:fire .55s ease}
+@keyframes fire{0%{transform:scale(1) rotate(0)}40%{transform:scale(1.4) rotate(-25deg)}100%{transform:scale(1) rotate(0)}}
+.dots span{animation:jump 1s infinite}
+.dots span:nth-child(2){animation-delay:.15s}.dots span:nth-child(3){animation-delay:.3s}
+@keyframes jump{0%,60%,100%{transform:translateY(0);opacity:.3}30%{transform:translateY(-7px);opacity:1}}
+.card{position:relative;overflow:hidden}
+.card::after{content:"";position:absolute;top:-50%;left:-60%;width:40%;height:200%;background:linear-gradient(90deg,transparent,rgba(255,255,255,.07),transparent);transform:rotate(20deg);animation:sweep 5s ease-in-out infinite;pointer-events:none}
+@keyframes sweep{0%{left:-60%}60%,100%{left:130%}}
+.typeBtn:active{transform:scale(.98)}
+.msg.bot img{box-shadow:0 0 40px rgba(212,169,85,.25)}
+body{animation:bg 6s ease infinite;background-size:300% 300%}
+.orb{opacity:.75;filter:blur(70px);animation-duration:9s}
+.orb.a{width:620px;height:620px}
+.orb.b{width:560px;height:560px}
+.orb.c{width:460px;height:460px;opacity:.55}
+.orb.d{width:380px;height:380px;background:#7c3aed;top:55%;right:-60px;animation-delay:-3s;opacity:.6}
+.orb.e{width:300px;height:300px;background:#14b8a6;top:-40px;right:20%;animation-delay:-7s;opacity:.5}
+.aurora{position:fixed;left:-50%;width:200%;height:55%;filter:blur(60px);z-index:0;pointer-events:none;opacity:.9}
+.aurora.a1{top:5%;background:linear-gradient(90deg,transparent,rgba(212,169,85,.35),rgba(63,123,214,.35),rgba(192,85,122,.3),transparent);animation:aur 7s ease-in-out infinite}
+.aurora.a2{top:45%;background:linear-gradient(90deg,transparent,rgba(20,184,166,.3),rgba(124,58,237,.35),rgba(212,169,85,.3),transparent);animation:aur 11s ease-in-out -4s infinite reverse}
+@keyframes aur{0%,100%{transform:translateY(0) skewY(-8deg) scale(1)}50%{transform:translateY(-90px) skewY(8deg) scale(1.15)}}
+.grid-bg{position:fixed;inset:0;z-index:0;pointer-events:none;background-image:linear-gradient(rgba(212,169,85,.14) 1px,transparent 1px),linear-gradient(90deg,rgba(212,169,85,.14) 1px,transparent 1px);background-size:56px 56px;animation:gridMove 6s linear infinite;-webkit-mask-image:radial-gradient(ellipse at center,#000 30%,transparent 80%);mask-image:radial-gradient(ellipse at center,#000 30%,transparent 80%)}
+@keyframes gridMove{to{background-position:56px 56px}}
+.spark{position:fixed;bottom:-12px;border-radius:50%;background:var(--accent);box-shadow:0 0 12px var(--accent),0 0 24px var(--accent);z-index:0;pointer-events:none;animation:rise linear infinite}
+@keyframes rise{0%{transform:translateY(0) translateX(0);opacity:0}15%{opacity:1}100%{transform:translateY(-110vh) translateX(60px);opacity:0}}
+.card{backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);background:color-mix(in srgb,var(--panel) 82%,transparent)}
+.bar{backdrop-filter:blur(16px);background:color-mix(in srgb,var(--panel) 85%,transparent)}
+</style>
+</head>
+<body>
+<div class="aurora a1"></div><div class="aurora a2"></div><div class="grid-bg"></div>
+<div class="orb a"></div><div class="orb b"></div><div class="orb c"></div><div class="orb d"></div><div class="orb e"></div>
+<div id="sparks"></div>
+
+<!-- 1. Ro‘yxatdan o‘tish -->
+<div class="screen" id="sReg"><div class="card" id="cReg">
+  <div class="logo">Uzb<span>GPT</span></div>
+  <h3>Ro‘yxatdan o‘tish</h3>
+  <div class="grid3" style="grid-template-columns:1fr 1fr">
+    <div><label>Ism</label><input id="fName"></div>
+    <div><label>Familiya</label><input id="fSur"></div>
+  </div>
+  <label>Yosh</label><input id="fAge" type="number" min="1" max="120">
+  <label>Tug‘ilgan sana</label>
+  <div class="grid3"><select id="fDay"></select><select id="fMonth"></select><select id="fYear"></select></div>
+  <label>Tilni tanlang (99 ta til)</label><select id="fLang"></select>
+  <div class="msgline" id="regMsg"></div>
+  <div class="row"><button class="btn" id="btnNext1">Davom etish</button></div>
+</div></div>
+
+<!-- 2. Parol turi -->
+<div class="screen" id="sType"><div class="card" id="cType">
+  <h3>Parol turini tanlang</h3>
+  <button class="typeBtn" data-t="dash"><b>— Chiziqli</b><small>Faqat chiziqlar: - _ — = ~</small></button>
+  <button class="typeBtn" data-t="num"><b>123 Sonli</b><small>Faqat raqamlar: 0–9</small></button>
+  <button class="typeBtn" data-t="alpha"><b>Abc Harfli</b><small>Faqat harflar: A–Z, a–z, o‘zbekcha harflar</small></button>
+  <div class="row"><button class="btn ghost" id="backType">Orqaga</button></div>
+</div></div>
+
+<!-- 3. Parol qo‘yish -->
+<div class="screen" id="sSet"><div class="card" id="cSet">
+  <h3>Parol qo‘ying</h3>
+  <p class="note" id="setHint"></p>
+  <label>Parol (kamida 4 belgi)</label><input id="pw1" type="password">
+  <label>Parolni takrorlang</label><input id="pw2" type="password">
+  <div class="msgline" id="setMsg"></div>
+  <div class="row"><button class="btn ghost" id="backSet">Orqaga</button><button class="btn" id="btnSave">Saqlash</button></div>
+</div></div>
+
+<!-- 4. Kirish (parol so‘raladi) -->
+<div class="screen" id="sLogin"><div class="card" id="cLogin">
+  <div class="logo">Uzb<span>GPT</span></div>
+  <h3 id="welcome"></h3>
+  <p class="note" id="loginHint"></p>
+  <label>Parol</label><input id="pwLogin" type="password" autocomplete="off">
+  <div class="msgline" id="loginMsg"></div>
+  <div class="row"><button class="btn" id="btnLogin">Kirish</button></div>
+</div></div>
+
+<!-- Asosiy ilova -->
+<div id="app">
+  <header>
+    <div class="logoSm">Uzb<span>GPT</span></div>
+    <div>
+      <button class="iconbtn" id="themeBtn" title="Kunduzgi / tungi rejim">🌙</button>
+      <button class="iconbtn" id="setBtn" title="Sozlamalar">⚙️</button>
+    </div>
+  </header>
+  <div id="chat"><div class="empty" id="empty"><h2 id="greet">Assalomu alaykum!</h2><p>Savolingizni yozing yoki mikrofon orqali gapiring.</p></div></div>
+  <footer>
+    <div class="bar">
+      <button class="iconbtn" id="imgBtn" title="Rasm yaratish">🎨</button>
+      <button class="iconbtn" id="micBtn" title="Ovozli suhbat">🎤</button>
+      <textarea id="inp" rows="1" placeholder="Xabar yozing..."></textarea>
+      <button class="send" id="sendBtn" title="Yuborish">➤</button>
+    </div>
+  </footer>
+</div>
+
+<div class="modal" id="setModal"><div class="card" style="max-width:440px">
+  <h3>Sozlamalar</h3>
+  <label>Gemini API kaliti</label>
+  <input type="password" id="apiKey" placeholder="AIza...">
+  <p class="note">Kalit faqat sizning brauzeringizda saqlanadi.</p>
+  <label>Javob tili</label><select id="lang"></select>
+  <label>Ovozli javob</label>
+  <select id="voiceOut"><option value="1">Yoqilgan</option><option value="0">O‘chirilgan</option></select>
+  <div class="row">
+    <button class="btn ghost" id="clearBtn">Suhbatni tozalash</button>
+    <button class="btn ghost" id="resetBtn">Hisobni o‘chirish</button>
+    <button class="btn ghost" id="closeBtn">Yopish</button>
+    <button class="btn" id="saveBtn">Saqlash</button>
+  </div>
+</div></div>
+
+<script>
+const LANGS="O‘zbek (yangi imlo)|uz-UZ;O‘zbek (kirill)|uz-UZ;Qoraqalpoq|kaa;Qozoq|kk-KZ;Qirg‘iz|ky-KG;Tojik|tg-TJ;Turkman|tk-TM;Ozarbayjon|az-AZ;Turk|tr-TR;Rus|ru-RU;Ukrain|uk-UA;Belarus|be-BY;Ingliz|en-US;Nemis|de-DE;Fransuz|fr-FR;Ispan|es-ES;Italyan|it-IT;Portugal|pt-PT;Gollandiya|nl-NL;Shved|sv-SE;Norveg|nb-NO;Daniya|da-DK;Fin|fi-FI;Polyak|pl-PL;Chex|cs-CZ;Slovak|sk-SK;Vengr|hu-HU;Ruminiya|ro-RO;Bolgar|bg-BG;Yunon|el-GR;Serb|sr-RS;Xorvat|hr-HR;Sloven|sl-SI;Albaniya|sq-AL;Latviya|lv-LV;Litva|lt-LT;Estoniya|et-EE;Islandiya|is-IS;Irland|ga-IE;Gruzin|ka-GE;Armanicha|hy-AM;Arab|ar-SA;Fors|fa-IR;Ivrit|he-IL;Urdu|ur-PK;Hind|hi-IN;Bengal|bn-BD;Panjob|pa-IN;Gujarot|gu-IN;Marathi|mr-IN;Tamil|ta-IN;Telugu|te-IN;Kannada|kn-IN;Malayalam|ml-IN;Singal|si-LK;Nepal|ne-NP;Xitoy (soddalashtirilgan)|zh-CN;Xitoy (an'anaviy)|zh-TW;Yapon|ja-JP;Koreys|ko-KR;Vetnam|vi-VN;Tay|th-TH;Indonez|id-ID;Malay|ms-MY;Tagalog|fil-PH;Birma|my-MM;Khmer|km-KH;Lao|lo-LA;Mongol|mn-MN;Tibet|bo-CN;Pashto|ps-AF;Kurd|ku-TR;Suahili|sw-KE;Amxar|am-ET;Hausa|ha-NG;Yoruba|yo-NG;Igbo|ig-NG;Zulu|zu-ZA;Xosa|xh-ZA;Afrikaans|af-ZA;Somali|so-SO;Malagasi|mg-MG;Shona|sn-ZW;Lingala|ln-CD;Kinyarvanda|rw-RW;Malta|mt-MT;Bask|eu-ES;Katalon|ca-ES;Galisiy|gl-ES;Uels|cy-GB;Bretonlik|br-FR;Lotin|la;Esperanto|eo;Shotland gaelik|gd-GB;Bosniy|bs-BA;Makedon|mk-MK;Maori|mi-NZ;Samoa|sm-WS;Assam|as-IN";
+const LANG_LIST=LANGS.split(';').map(s=>{const[n,c]=s.split('|');return{name:n,code:c}});
+const TYPES={dash:{re:/^[-_—–=~]+$/,hint:'Faqat chiziqlardan iborat parol kiriting: - _ — = ~'},num:{re:/^\d+$/,hint:'Faqat raqamlardan iborat parol kiriting (0–9)'},alpha:{re:/^\p{L}+$/u,hint:'Faqat harflardan iborat parol kiriting'}};
+const MONTHS=['Yanvar','Fevral','Mart','Aprel','May','Iyun','Iyul','Avgust','Sentabr','Oktabr','Noyabr','Dekabr'];
+
+const $=id=>document.getElementById(id);
+const chat=$('chat'),inp=$('inp');
+let history=[],imageMode=false,profile=null,pendingType=null,draft={};
+let cfg={key:'',voice:true,light:false};
+try{Object.assign(cfg,JSON.parse(localStorage.getItem('uzbgpt_cfg')||'{}'))}catch(e){}
+try{profile=JSON.parse(localStorage.getItem('uzbgpt_profile')||'null')}catch(e){}
+
+/* ---------- tayyorlash ---------- */
+LANG_LIST.forEach((l,i)=>{const o=new Option(l.name,i);$('fLang').appendChild(o.cloneNode(true));$('lang').appendChild(o)});
+$('fDay').innerHTML='<option value="">Kun</option>'+Array.from({length:31},(_,i)=>`<option value="${i+1}">${i+1}</option>`).join('');
+$('fMonth').innerHTML='<option value="">Oy</option>'+MONTHS.map((m,i)=>`<option value="${i+1}">${m}</option>`).join('');
+$('fYear').innerHTML='<option value="">Yil</option>'+Array.from({length:100},(_,i)=>2026-i).map(y=>`<option value="${y}">${y}</option>`).join('');
+function saveCfg(){try{localStorage.setItem('uzbgpt_cfg',JSON.stringify(cfg))}catch(e){}}
+function applyTheme(){document.body.classList.toggle('light',cfg.light);$('themeBtn').textContent=cfg.light?'☀️':'🌙'}
+applyTheme();
+
+function showScreen(id){document.querySelectorAll('.screen').forEach(s=>s.classList.toggle('show',s.id===id))}
+function shake(card){card.classList.remove('shake');void card.offsetWidth;card.classList.add('shake')}
+function okFlash(card){card.classList.remove('ok');void card.offsetWidth;card.classList.add('ok')}
+
+/* Parolni yashirin saqlash (oddiy xesh) */
+function hash(s,salt){let h=5381;for(const c of salt+s)h=((h<<5)+h+c.charCodeAt(0))|0;return (h>>>0).toString(16)}
+const newSalt=()=>Math.random().toString(36).slice(2,10);
+
+/* ---------- ro‘yxatdan o‘tish ---------- */
+$('btnNext1').onclick=()=>{
+  const name=$('fName').value.trim(),sur=$('fSur').value.trim(),age=+$('fAge').value;
+  const d=$('fDay').value,m=$('fMonth').value,y=$('fYear').value,lang=$('fLang').value;
+  if(!name||!sur||!age||age<1||age>120||!d||!m||!y){$('regMsg').className='msgline bad';$('regMsg').textContent='Barcha maydonlarni to‘g‘ri to‘ldiring.';shake($('cReg'));return}
+  draft={name,sur,age,dob:`${d}.${m}.${y}`,lang:+lang};
+  $('regMsg').textContent='';
+  showScreen('sType');
+};
+document.querySelectorAll('.typeBtn').forEach(b=>b.onclick=()=>{
+  document.querySelectorAll('.typeBtn').forEach(x=>x.classList.remove('sel'));
+  b.classList.add('sel');
+  pendingType=b.dataset.t;
+  $('setHint').textContent=TYPES[pendingType].hint;
+  $('pw1').value='';$('pw2').value='';$('setMsg').textContent='';
+  setTimeout(()=>{showScreen('sSet');$('pw1').focus()},250);
+});
+$('backType').onclick=()=>showScreen('sReg');
+$('backSet').onclick=()=>showScreen('sType');
+$('btnSave').onclick=async()=>{
+  const p1=$('pw1').value,p2=$('pw2').value,t=TYPES[pendingType];
+  let err='';
+  if(p1.length<4)err='Parol kamida 4 belgidan iborat bo‘lsin.';
+  else if(!t.re.test(p1))err='Parol tanlangan turga mos emas.';
+  else if(p1!==p2)err='Parollar bir-biriga mos kelmadi.';
+  if(err){$('setMsg').className='msgline bad';$('setMsg').textContent=err;shake($('cSet'));return}
+  const salt=newSalt();
+  profile={...draft,type:pendingType,salt,hash:hash(p1,salt)};
+  try{localStorage.setItem('uzbgpt_profile',JSON.stringify(profile))}catch(e){}
+  cfg.lang=profile.lang;saveCfg();
+  $('setMsg').className='msgline good';$('setMsg').textContent='Parol saqlandi!';
+  okFlash($('cSet'));
+  setTimeout(enterApp,700);
+};
+
+/* ---------- kirish ---------- */
+function showLogin(){
+  $('welcome').textContent=`Xush kelibsiz, ${profile.name}!`;
+  $('loginHint').textContent='Davom etish uchun parolingizni kiriting.';
+  $('pwLogin').value='';$('pwLogin').type='password';
+  $('pwLogin').placeholder=TYPES[profile.type]&&profile.type==='num'?'Faqat raqamlar':profile.type==='dash'?'Faqat chiziqlar':'Faqat harflar';
+  $('loginMsg').textContent='';
+  showScreen('sLogin');
+  setTimeout(()=>$('pwLogin').focus(),400);
+}
+$('btnLogin').onclick=()=>{
+  const pw=$('pwLogin').value;
+  if(hash(pw,profile.salt)===profile.hash){
+    $('loginMsg').className='msgline good';$('loginMsg').textContent='To‘g‘ri! Xush kelibsiz.';
+    okFlash($('cLogin'));
+    setTimeout(enterApp,800);
+  }else{
+    $('loginMsg').className='msgline bad';$('loginMsg').textContent='Noto‘g‘ri parol. Qayta urinib ko‘ring.';
+    shake($('cLogin'));
+    $('pwLogin').select();
+  }
+};
+$('pwLogin').addEventListener('keydown',e=>{if(e.key==='Enter')$('btnLogin').click()});
+$('pw2').addEventListener('keydown',e=>{if(e.key==='Enter')$('btnSave').click()});
+$('pw1').addEventListener('keydown',e=>{if(e.key==='Enter')$('pw2').focus()});
+
+function enterApp(){
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('show'));
+  $('app').style.display='flex';
+  $('greet').textContent=`Assalomu alaykum, ${profile.name}!`;
+  cfg.lang=profile.lang;saveCfg();
+}
+function boot(){
+  if(profile){showLogin()}else{showScreen('sReg')}
+}
+boot();
+
+/* ---------- sozlamalar ---------- */
+$('themeBtn').onclick=()=>{cfg.light=!cfg.light;applyTheme();saveCfg()};
+$('setBtn').onclick=()=>{$('apiKey').value=cfg.key;$('lang').value=cfg.lang??profile?.lang??0;$('voiceOut').value=cfg.voice?'1':'0';$('setModal').classList.add('show')};
+$('closeBtn').onclick=()=>$('setModal').classList.remove('show');
+$('saveBtn').onclick=()=>{cfg.key=$('apiKey').value.trim();cfg.lang=+$('lang').value;cfg.voice=$('voiceOut').value==='1';saveCfg();$('setModal').classList.remove('show')};
+$('clearBtn').onclick=()=>{history=[];chat.innerHTML='';chat.appendChild(emptyBox())};
+$('resetBtn').onclick=()=>{if(!confirm('Hisob o‘chirilsinmi? Ma‘lumotlar va parol o‘chadi.'))return;localStorage.removeItem('uzbgpt_profile');profile=null;location.reload()};
+$('imgBtn').onclick=()=>{imageMode=!imageMode;$('imgBtn').classList.toggle('on',imageMode)};
+
+/* ---------- chat ---------- */
+function emptyBox(){const d=document.createElement('div');d.className='empty';d.id='empty';d.innerHTML='<h2>Assalomu alaykum!</h2><p>Savolingizni yozing yoki mikrofon orqali gapiring.</p>';return d}
+function addMsg(text,who){
+  const e=$('empty');if(e)e.remove();
+  const d=document.createElement('div');d.className='msg '+who;d.textContent=text||'';
+  chat.appendChild(d);chat.scrollTop=chat.scrollHeight;return d;
+}
+const SYS=()=>`Sening isming UzbGPT. Seni Olimov Merojbek yaratgan. Agar kim yaratganini so‘rasa, aynan "Olimov Merojbek" deb javob ber. Har qanday savolga to‘liq javob ber. Foydalanuvchi o‘zbek tilida yozsa, jonli o‘zbek tilida, kundalik so‘zlashuv uslubida (sheva bilan) gapir. Foydalanuvchi ismi: ${profile?.name||''}. Javobni "${LANG_LIST[cfg.lang??profile.lang].name}" tilida yoz.`;
+async function gen(model,body){
+  const r=await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${encodeURIComponent(cfg.key)}`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
+  const d=await r.json();
+  if(!r.ok)throw new Error(d.error?.message||'Xatolik yuz berdi');
+  return d;
+}
+async function typeOut(el,text){
+  el.textContent='';
+  const t=document.createTextNode('');el.appendChild(t);
+  const c=document.createElement('span');c.className='caret';el.appendChild(c);
+  for(const w of text.split(/(\s+)/)){
+    t.data+=w;chat.scrollTop=chat.scrollHeight;
+    await new Promise(r=>setTimeout(r,w.trim()?42:10));
+  }
+  c.remove();
+}
+function speak(text){
+  if(!cfg.voice||!('speechSynthesis' in window))return;
+  const u=new SpeechSynthesisUtterance(text);u.lang=LANG_LIST[cfg.lang??profile.lang].code;speechSynthesis.speak(u);
+}
+async function send(){
+  const text=inp.value.trim();if(!text)return;
+  $('sendBtn').classList.remove('fire');void $('sendBtn').offsetWidth;$('sendBtn').classList.add('fire');
+  if(!cfg.key){addMsg('Avval ⚙️ sozlamalarda Gemini API kalitini kiriting.','bot');$('setBtn').click();return}
+  inp.value='';inp.style.height='auto';
+  addMsg(text,'user');
+  const wait=addMsg('','bot');
+  wait.innerHTML='<span class="dots"><span>•</span><span>•</span><span>•</span></span>';
+  try{
+    if(imageMode){
+      const d=await gen('gemini-2.0-flash-preview-image-generation',{contents:[{role:'user',parts:[{text}]}],generationConfig:{responseModalities:['TEXT','IMAGE']}});
+      const parts=d.candidates?.[0]?.content?.parts||[];
+      const txt=parts.filter(p=>p.text).map(p=>p.text).join('');
+      const img=parts.find(p=>p.inlineData);
+      wait.textContent=txt||'Rasm tayyor:';
+      if(img){const i=document.createElement('img');i.src=`data:${img.inlineData.mimeType};base64,${img.inlineData.data}`;wait.appendChild(i)}
+      else wait.textContent='Rasm yaratib bo‘lmadi. Boshqacha so‘rab ko‘ring.';
+    }else{
+      history.push({role:'user',parts:[{text}]});
+      const d=await gen('gemini-2.5-flash',{systemInstruction:{parts:[{text:SYS()}]},contents:history.slice(-20)});
+      const answer=(d.candidates?.[0]?.content?.parts||[]).map(p=>p.text||'').join('')||'Javob olinmadi.';
+      history.push({role:'model',parts:[{text:answer}]});
+      await typeOut(wait,answer);
+      speak(answer);
+    }
+  }catch(err){wait.textContent='Xatolik: '+err.message}
+  chat.scrollTop=chat.scrollHeight;
+}
+$('sendBtn').onclick=send;
+inp.addEventListener('keydown',e=>{if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();send()}});
+inp.addEventListener('input',()=>{inp.style.height='auto';inp.style.height=Math.min(inp.scrollHeight,160)+'px'});
+
+const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
+$('micBtn').onclick=()=>{
+  if(!SR){addMsg('Brauzeringiz ovozni tanishni qo‘llab-quvvatlamaydi (Chrome tavsiya etiladi).','bot');return}
+  const rec=new SR();rec.lang=LANG_LIST[cfg.lang??profile.lang].code;rec.interimResults=false;
+  rec.onstart=()=>$('micBtn').classList.add('on');
+  rec.onend=()=>$('micBtn').classList.remove('on');
+  rec.onresult=e=>{inp.value=e.results[0][0].transcript;send()};
+  rec.onerror=()=>$('micBtn').classList.remove('on');
+  rec.start();
+};
+(function(){
+  const box=document.getElementById('sparks');
+  for(let i=0;i<45;i++){
+    const s=document.createElement('div');s.className='spark';
+    const size=2+Math.random()*4;
+    s.style.cssText=`left:${Math.random()*100}%;width:${size}px;height:${size}px;animation-duration:${6+Math.random()*8}s;animation-delay:${-Math.random()*12}s`;
+    box.appendChild(s);
+  }
+})();
+</script>
+</body>
+</html>
